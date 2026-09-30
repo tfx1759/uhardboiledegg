@@ -118,6 +118,13 @@
 
   <details>
     <summary>Advanced</summary>
+    <label for="count">Number of eggs in the pot</label>
+    <select id="count">
+      <option value="0">1–4 eggs</option>
+      <option value="15">5–8 eggs (+15 s)</option>
+      <option value="30">9 or more (+30 s)</option>
+    </select>
+    <p class="note" style="margin:6px 0 14px">More eggs cool the water more. Use plenty of water and a single layer.</p>
     <label for="alt">Altitude (water boils cooler up high)</label>
     <select id="alt">
       <option value="0">Sea level / under 300 m</option>
@@ -170,12 +177,12 @@ function cookSeconds(s) {
   const Ty = Math.min(YOLKS.find(y => y.id === s.yolk).t, Tw - 3);
   const M = SIZES[s.type][s.size][1];
   const min = 0.451 * Math.pow(M, 2 / 3) * Math.log(0.76 * (Te - Tw) / (Ty - Tw)) * TYPE_FACTOR[s.type];
-  return Math.max(MIN_T, Math.round(min * 60 / 5) * 5); // round to 5 s
+  return Math.max(MIN_T, Math.round((min * 60 + (s.count || 0)) / 5) * 5); // round to 5 s
 }
 
 // ---- State ------------------------------------------------------------
 const $ = id => document.getElementById(id);
-let state = { type: "chicken", size: 2, start: "fridge", yolk: "jammy", alt: 0 };
+let state = { type: "chicken", size: 2, start: "fridge", yolk: "jammy", alt: 0, count: 0 };
 try { Object.assign(state, JSON.parse(localStorage.getItem("egg") || "{}")); } catch (e) {}
 if (!SIZES[state.type]?.[state.size]) state.size = DEFAULT_SIZE[state.type] ?? 0;
 if (!YOLKS.some(y => y.id === state.yolk)) state.yolk = "jammy";
@@ -230,6 +237,7 @@ function render() {
   const y = YOLKS.find(y => y.id === state.yolk);
   $("timeSub").textContent = `${y.name.toLowerCase()} yolk · ${state.type} · ${sz.toLowerCase()} · ${state.start === "fridge" ? "cold" : "room-temp"}`;
   $("alt").value = String(state.alt);
+  $("count").value = String(state.count);
   save();
 }
 
@@ -242,6 +250,7 @@ document.addEventListener("click", e => {
   else state[key] = b.dataset.v;
   render();
 });
+$("count").addEventListener("change", e => { state.count = +e.target.value; render(); });
 $("alt").addEventListener("change", e => { state.alt = +e.target.value; render(); });
 
 // ---- Timer ------------------------------------------------------------
