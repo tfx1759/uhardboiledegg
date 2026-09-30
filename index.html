@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fff8e7">
+<title>Perfect Egg</title>
+<style>
+  :root {
+    --bg: #fff8e7; --card: #ffffff; --ink: #2b2118; --muted: #7a6a58;
+    --line: #eadfc8; --accent: #e8590c; --accent-ink: #fff;
+    --white: #fffdf7; --shadow: 0 2px 10px rgba(80,50,10,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#17130f; --card:#241e18; --ink:#f6ecdc; --muted:#b3a38e; --line:#3a3026; --accent:#ff8a3d; --accent-ink:#1b1209; --white:#f4ead6; --shadow:none; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 17px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 4px 0 12px; text-align: center; }
+  h2 { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 18px 0 8px; font-weight: 600; }
+  .seg { display: grid; gap: 8px; }
+  .seg.c3 { grid-template-columns: repeat(3, 1fr); }
+  .seg.c2 { grid-template-columns: repeat(2, 1fr); }
+  .seg.c4 { grid-template-columns: repeat(4, 1fr); }
+  .seg.c5 { grid-template-columns: repeat(5, 1fr); }
+  .opt {
+    appearance: none; border: 2px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 14px; padding: 12px 6px; min-height: 56px; font: inherit; font-weight: 600;
+    cursor: pointer; box-shadow: var(--shadow); text-align: center; line-height: 1.15;
+  }
+  .opt small { display: block; font-weight: 400; color: var(--muted); font-size: .72rem; margin-top: 3px; }
+  .opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--card)); }
+  .opt:focus-visible, .btn:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .yolk-row { display: flex; align-items: center; gap: 14px; }
+  .yolk-row svg { width: 96px; height: 116px; flex: none; }
+  .yolk-row .seg { flex: 1; min-width: 0; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .yolk-row .opt { padding: 8px 2px; min-height: 44px; font-size: .95rem; }
+  .yolk-desc { text-align: center; color: var(--muted); margin: 8px 0 0; min-height: 1.4em; font-size: .95rem; }
+
+  .result {
+    margin-top: 22px; background: var(--card); border: 2px solid var(--line); border-radius: 20px;
+    padding: 18px; text-align: center; box-shadow: var(--shadow);
+  }
+  .time { font-size: 4rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -.02em; }
+  .time-sub { color: var(--muted); margin: 6px 0 14px; font-size: .95rem; }
+  .btn {
+    appearance: none; border: 0; border-radius: 16px; background: var(--accent); color: var(--accent-ink);
+    font: inherit; font-weight: 700; font-size: 1.2rem; min-height: 60px; width: 100%; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--muted); border: 2px solid var(--line); font-size: 1rem; min-height: 48px; margin-top: 10px; font-weight: 600; }
+  .steps { text-align: left; margin: 14px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .93rem; }
+  .steps li { padding: 4px 0 4px 22px; position: relative; }
+  .steps li::before { content: attr(data-n); position: absolute; left: 0; color: var(--accent); font-weight: 700; }
+
+  details { margin-top: 18px; color: var(--muted); }
+  summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+  select { font: inherit; padding: 10px; border-radius: 10px; border: 2px solid var(--line); background: var(--card); color: var(--ink); width: 100%; min-height: 48px; }
+  .note { font-size: .85rem; color: var(--muted); margin-top: 8px; }
+
+  /* Timer overlay */
+  #timer { position: fixed; inset: 0; background: var(--bg); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; z-index: 10; }
+  #timer.on { display: flex; }
+  #timer .phase { font-size: 1.2rem; color: var(--muted); margin-bottom: 8px; min-height: 1.5em; }
+  #timer .big { font-size: min(28vw, 7.5rem); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  #timer .hint { margin: 16px 0 28px; max-width: 320px; color: var(--muted); min-height: 3em; }
+  #timer .btn { max-width: 320px; }
+  #ring { width: min(70vw, 280px); height: auto; margin-bottom: 16px; }
+  #ring circle { fill: none; stroke-width: 12; }
+  #ring .bg { stroke: var(--line); }
+  #ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+  #timer.done .fg { stroke: #2f9e44; }
+</style>
+</head>
+<body>
+<main id="setup">
+  <h1>🥚 Perfect Egg</h1>
+
+  <h2>Egg</h2>
+  <div class="seg c3" data-group="type">
+    <button class="opt" data-v="chicken">Chicken</button>
+    <button class="opt" data-v="duck">Duck</button>
+    <button class="opt" data-v="quail">Quail</button>
+  </div>
+
+  <h2>Size</h2>
+  <div class="seg c4" id="sizes" data-group="size"></div>
+
+  <h2>Starting from</h2>
+  <div class="seg c2" data-group="start">
+    <button class="opt" data-v="fridge">Fridge<small>~4 °C / 39 °F</small></button>
+    <button class="opt" data-v="room">Room temp<small>~20 °C / 68 °F</small></button>
+  </div>
+
+  <h2>Yolk</h2>
+  <div class="yolk-row">
+    <svg id="egg" viewBox="0 0 96 116" aria-hidden="true"></svg>
+    <div class="seg" data-group="yolk" id="yolks"></div>
+  </div>
+  <p class="yolk-desc" id="yolkDesc"></p>
+
+  <section class="result" aria-live="polite">
+    <div class="time" id="time">–</div>
+    <div class="time-sub" id="timeSub"></div>
+    <button class="btn" id="start">Start timer</button>
+    <ol class="steps">
+      <li data-n="1">Bring plenty of water to a full, rolling boil.</li>
+      <li data-n="2">Gently lower the eggs in with a spoon, then start the timer.</li>
+      <li data-n="3">When it rings, move eggs to ice water for 5 min, then peel.</li>
+    </ol>
+  </section>
+
+  <details>
+    <summary>Advanced</summary>
+    <label for="alt">Altitude (water boils cooler up high)</label>
+    <select id="alt">
+      <option value="0">Sea level / under 300 m</option>
+      <option value="600">~600 m (2,000 ft)</option>
+      <option value="1200">~1,200 m (4,000 ft)</option>
+      <option value="1800">~1,800 m (6,000 ft)</option>
+      <option value="2500">~2,500 m (8,000 ft)</option>
+    </select>
+    <p class="note">Times are calculated from heat-transfer physics (Williams' egg formula), assuming eggs go into already-boiling water. Adjust a tap up or down to taste — your stove, pot and egg are your own.</p>
+  </details>
+</main>
+
+<div id="timer" role="dialog" aria-modal="true" aria-label="Egg timer">
+  <div class="phase" id="phase"></div>
+  <svg id="ring" viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="fg" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/></svg>
+  <div class="big" id="big">0:00</div>
+  <div class="hint" id="hint"></div>
+  <button class="btn" id="next">Cancel</button>
+  <button class="btn ghost" id="cancel" style="max-width:320px">Cancel</button>
+</div>
+
+<script>
+"use strict";
+// ---- Data -------------------------------------------------------------
+const SIZES = {
+  chicken: [["Small", 43], ["Medium", 53], ["Large", 63], ["XL", 73]],
+  duck:    [["Small", 60], ["Medium", 75], ["Large", 90]],
+  quail:   [["Standard", 10]],
+};
+const DEFAULT_SIZE = { chicken: 2, duck: 1, quail: 0 };
+// Target yolk-centre temperature (°C) for each doneness.
+const YOLKS = [
+  { id: "runny",  name: "Runny",  t: 63, desc: "Liquid yolk, barely-set white. Best for dipping toast." },
+  { id: "soft",   name: "Soft",   t: 66, desc: "Set white, thick and saucy yolk." },
+  { id: "jammy",  name: "Jammy",  t: 70, desc: "Tacky, deep orange centre. Ramen style." },
+  { id: "medium", name: "Medium", t: 75, desc: "Creamy, mostly set. Great in salads." },
+  { id: "hard",   name: "Hard",   t: 82, desc: "Fully set, pale yellow. Deviled eggs." },
+];
+const START_T = { fridge: 4, room: 20 };
+const MIN_T = 20; // don't recommend anything shorter than this many seconds
+
+// ---- Model ------------------------------------------------------------
+// Williams (1995): t[min] = 0.451 · M^(2/3) · ln(0.76 · (Tegg − Tw) / (Tyolk − Tw))
+// Duck eggs have a slightly thicker shell/denser white; add a small factor.
+const TYPE_FACTOR = { chicken: 1, duck: 1.08, quail: 1 };
+function boilTemp(altM) { return 100 - altM / 300; }
+function cookSeconds(s) {
+  const Tw = boilTemp(s.alt);
+  const Te = START_T[s.start];
+  const Ty = Math.min(YOLKS.find(y => y.id === s.yolk).t, Tw - 3);
+  const M = SIZES[s.type][s.size][1];
+  const min = 0.451 * Math.pow(M, 2 / 3) * Math.log(0.76 * (Te - Tw) / (Ty - Tw)) * TYPE_FACTOR[s.type];
+  return Math.max(MIN_T, Math.round(min * 60 / 5) * 5); // round to 5 s
+}
+
+// ---- State ------------------------------------------------------------
+const $ = id => document.getElementById(id);
+let state = { type: "chicken", size: 2, start: "fridge", yolk: "jammy", alt: 0 };
+try { Object.assign(state, JSON.parse(localStorage.getItem("egg") || "{}")); } catch (e) {}
+if (!SIZES[state.type]?.[state.size]) state.size = DEFAULT_SIZE[state.type] ?? 0;
+if (!YOLKS.some(y => y.id === state.yolk)) state.yolk = "jammy";
+const save = () => { try { localStorage.setItem("egg", JSON.stringify(state)); } catch (e) {} };
+
+const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+function renderSizes() {
+  const box = $("sizes");
+  const list = SIZES[state.type];
+  box.className = "seg c" + Math.min(list.length, 4);
+  box.innerHTML = "";
+  list.forEach(([name, g], i) => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.dataset.v = i;
+    b.innerHTML = `${name}<small>~${g} g</small>`;
+    box.appendChild(b);
+  });
+}
+function renderYolks() {
+  const box = $("yolks");
+  box.innerHTML = "";
+  YOLKS.forEach(y => {
+    const b = document.createElement("button");
+    b.className = "opt"; b.dataset.v = y.id; b.textContent = y.name;
+    box.appendChild(b);
+  });
+}
+function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+function drawEgg() {
+  const y = YOLKS.find(y => y.id === state.yolk);
+  const k = YOLKS.indexOf(y) / (YOLKS.length - 1); // 0 = runny .. 1 = hard
+  const rgb = mix([255, 140, 0], [250, 208, 90], k);   // deep orange → pale yellow
+  const col = `rgb(${rgb})`;
+  const liquid = Math.max(0, 1 - k * 1.35);             // liquid core fraction
+  const R = 22;
+  $("egg").innerHTML = `
+    <path d="M48 6C27 6 10 46 10 72c0 24 16 40 38 40s38-16 38-40C86 46 69 6 48 6z" fill="var(--white)" stroke="var(--line)" stroke-width="3"/>
+    <circle cx="48" cy="74" r="${R}" fill="${col}"/>
+    ${liquid > .05 ? `<circle cx="48" cy="74" r="${(R * liquid * .85).toFixed(1)}" fill="rgb(${mix([255,120,0],[255,150,10],.5)})" opacity=".95"/>
+    <circle cx="${48 - R * liquid * .3}" cy="${74 - R * liquid * .3}" r="${(R * liquid * .2).toFixed(1)}" fill="#fff" opacity=".45"/>` : ""}`;
+  $("yolkDesc").textContent = y.desc;
+}
+function render() {
+  document.querySelectorAll("[data-group]").forEach(g => {
+    g.querySelectorAll(".opt").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(state[g.dataset.group]))));
+  });
+  drawEgg();
+  const s = cookSeconds(state);
+  $("time").textContent = fmt(s);
+  const [sz, g] = SIZES[state.type][state.size];
+  const y = YOLKS.find(y => y.id === state.yolk);
+  $("timeSub").textContent = `${y.name.toLowerCase()} yolk · ${state.type} · ${sz.toLowerCase()} · ${state.start === "fridge" ? "cold" : "room-temp"}`;
+  $("alt").value = String(state.alt);
+  save();
+}
+
+// ---- Setup interactions -----------------------------------------------
+document.addEventListener("click", e => {
+  const b = e.target.closest(".opt"); if (!b) return;
+  const key = b.closest("[data-group]")?.dataset.group; if (!key) return;
+  if (key === "size") state.size = +b.dataset.v;
+  else if (key === "type") { state.type = b.dataset.v; state.size = DEFAULT_SIZE[state.type]; renderSizes(); }
+  else state[key] = b.dataset.v;
+  render();
+});
+$("alt").addEventListener("change", e => { state.alt = +e.target.value; render(); });
+
+// ---- Timer ------------------------------------------------------------
+let phases = [], idx = 0, endAt = 0, raf = 0, wake = null, actx = null;
+
+function beep(n = 3) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < n; i++) {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(actx.destination);
+      const t = actx.currentTime + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + .02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + .25);
+      o.start(t); o.stop(t + .3);
+    }
+  } catch (e) {}
+  try { navigator.vibrate?.([300, 150, 300, 150, 300]); } catch (e) {}
+}
+async function keepAwake() { try { wake = await navigator.wakeLock?.request("screen"); } catch (e) {} }
+function release() { try { wake?.release(); } catch (e) {} wake = null; }
+
+function startTimer() {
+  const cook = cookSeconds(state);
+  phases = [
+    { name: "Cooking", secs: cook, hint: "Keep the water at a gentle rolling boil.", next: "Skip", ring: true },
+    { name: "Ice bath", secs: 300, hint: "Eggs out now! Into ice water so they stop cooking and peel easily.", next: "Skip", ring: true },
+    { name: "Done", secs: 0, hint: "Tap the egg on the counter, roll it, and peel under running water. Enjoy!", next: "Finish" },
+  ];
+  // Unlock audio on this user gesture.
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
+  $("timer").classList.add("on");
+  keepAwake();
+  begin(0);
+}
+function begin(i) {
+  idx = i;
+  const p = phases[i];
+  $("timer").classList.toggle("done", !p.ring);
+  $("phase").textContent = p.name;
+  $("hint").textContent = i === 0 ? "Eggs in! " + p.hint : p.hint;
+  $("next").textContent = p.next;
+  $("cancel").style.display = p.ring ? "" : "none";
+  $("ring").style.visibility = p.ring ? "visible" : "hidden";
+  if (i > 0) beep(i === 1 ? 4 : 2);
+  if (!p.ring) { $("big").textContent = "✓"; release(); cancelAnimationFrame(raf); setCircle(1); return; }
+  endAt = Date.now() + p.secs * 1000;
+  tick();
+}
+function setCircle(frac) {
+  const C = 2 * Math.PI * 52, fg = $("fg");
+  fg.style.strokeDasharray = C; fg.style.strokeDashoffset = C * (1 - frac);
+}
+function tick() {
+  const p = phases[idx];
+  const left = Math.max(0, endAt - Date.now());
+  $("big").textContent = fmt(Math.ceil(left / 1000));
+  setCircle(left / (p.secs * 1000));
+  document.title = `${fmt(Math.ceil(left / 1000))} · Perfect Egg`;
+  if (left <= 0) { begin(idx + 1); return; }
+  raf = setTimeout(tick, 200);
+}
+function stopTimer() {
+  clearTimeout(raf); cancelAnimationFrame(raf); release();
+  $("timer").classList.remove("on");
+  document.title = "Perfect Egg";
+}
+$("start").addEventListener("click", startTimer);
+$("cancel").addEventListener("click", stopTimer);
+$("next").addEventListener("click", () => {
+  if (!phases[idx].ring) return stopTimer();
+  clearTimeout(raf); begin(idx + 1);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && $("timer").classList.contains("on")) {
+    if (phases[idx]?.ring) { clearTimeout(raf); tick(); }
+    if (!wake) keepAwake();
+  }
+});
+
+// ---- Init -------------------------------------------------------------
+renderSizes(); renderYolks(); render();
+window.__cookSeconds = cookSeconds; // for testing
+</script>
+</body>
+</html>
